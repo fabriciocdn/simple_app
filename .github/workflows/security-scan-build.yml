@@ -45,4 +45,4 @@ jobs:
       - name: Trivy Scan
         run: |
           docker run --rm -v ${{ github.workspace }}:/src \
-            aquasecurity/trivy:latest fs /src --severity HIGH,CRITICAL
+           ghcr.io/aquasecurity/trivy:latest fs /src --severity HIGH,CRITICAL
