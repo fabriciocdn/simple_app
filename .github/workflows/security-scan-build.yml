@@ -4,45 +4,71 @@ name: Security Pipeline
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
-  gitleaks:
-    runs-on: ubuntu-latest
+  security-scans:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        tool: [ "gitleaks", "semgrep", "hadolint", "trivy" ]
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
+           
       - name: Gitleaks Scan
+        if: matrix.tool == 'gitleaks'
         run: |
           docker run --rm -v ${{ github.workspace }}:/path \
             zricethezav/gitleaks:latest detect --source="/path" -v
 
-  semgrep:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - name: Semgrep Scan
+        if: matrix.tool == 'semgrep'
         run: |
           docker run --rm -v ${{ github.workspace }}:/src \
             semgrep/semgrep semgrep scan --config auto
-
-  hadolint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      
       - name: Hadolint Scan
+        if: matrix.tool == 'hadolint'
         run: |
           docker run --rm -i hadolint/hadolint < Dockerfile
-
-  trivy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      
       - name: Trivy Scan
+        if: matrix.tool == 'trivy'
         run: |
           docker run --rm -v ${{ github.workspace }}:/src \
            ghcr.io/aquasecurity/trivy:latest fs /src --severity HIGH,CRITICAL
+  build-and-push:
+    runs-on: self-hosted
+    needs: security-scans
+    env:
+      REGISTRY: ${{ secrets.REGISTRY }}
+      IMAGE_NAME: ${{ secrets.HARBOR_PROJECT }}/simple-app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Login no Harbor
+        run: |
+          echo "${{ secrets.HARBOR_PASSWORD }}" | docker login ${{ env.REGISTRY }} \
+            -u "${{ secrets.HARBOR_USERNAME }}" --password-stdin
+
+      - name: Build Imagem Docker
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+                       -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
+
+      - name: Trivy Image Scan (after-build)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            ghcr.io/aquasecurity/trivy:0.58.2 image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --severity HIGH,CRITICAL --exit-code 1
+      
+      - name: Push para o Harbor
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
