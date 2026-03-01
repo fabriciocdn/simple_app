@@ -57,11 +57,13 @@ jobs:
         run: |
           echo "$ALB_IP harbor.lab.aws" | sudo tee -a /etc/hosts
           echo "$ALB_IP argocd.lab.aws" | sudo tee -a /etc/hosts
-          echo "{\"insecure-registries\": [\"harbor.lab.aws\"]}" | sudo tee /etc/docker/daemon.json
+
+          echo "{\"insecure-registries\": [\"harbor.lab.aws\", \"harbor.lab.aws:80\"]}" | sudo tee /etc/docker/daemon.json
+
           sudo systemctl restart docker
       - name: Login no Harbor
         run: |
-          echo "${{ secrets.HARBOR_PASSWORD }}" | sudo docker login ${{ env.REGISTRY }}:80 \
+          echo "${{ secrets.HARBOR_PASSWORD }}" | sudo docker login http://${{ env.REGISTRY }}:80 \
             -u "${{ secrets.HARBOR_USERNAME }}" --password-stdin
 
       - name: Build Imagem Docker
