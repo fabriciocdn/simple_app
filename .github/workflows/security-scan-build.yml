@@ -68,7 +68,7 @@ jobs:
 
       - name: Build Imagem Docker
         run: |
-          docker build --no-cache -t ${{ env.REGISTRY }}:80/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          docker build -t ${{ env.REGISTRY }}:80/${{ env.IMAGE_NAME }}:${{ github.sha }} \
                        -t ${{ env.REGISTRY }}:80/${{ env.IMAGE_NAME }}:latest .
 
       - name: Trivy Image Scan (after-build)
