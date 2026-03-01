@@ -63,7 +63,7 @@ jobs:
           sudo systemctl restart docker
       - name: Login no Harbor
         run: |
-          echo "${{ secrets.HARBOR_PASSWORD }}" | sudo docker login http://${{ env.REGISTRY }}:80 \
+          echo "${{ secrets.HARBOR_PASSWORD }}" | sudo docker login ${{ env.REGISTRY }}:80 \
             -u "${{ secrets.HARBOR_USERNAME }}" --password-stdin
 
       - name: Build Imagem Docker
