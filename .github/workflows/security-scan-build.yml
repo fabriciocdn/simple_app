@@ -80,8 +80,8 @@ jobs:
       
       - name: Push para o Harbor
         run: |
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}:80/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}:80/${{ env.IMAGE_NAME }}:latest
 
   update-gitops-manifests:
     runs-on: ubuntu-latest
