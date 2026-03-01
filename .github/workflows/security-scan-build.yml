@@ -55,8 +55,8 @@ jobs:
           fetch-depth: 0
       - name: Apontamento URL aws #preciso por causa dominio ficticio
         run: |
-          echo "$ALB_IP harbor.lab.aws" | sudo tee -a /etc/hosts
-          echo "$ALB_IP argocd.lab.aws" | sudo tee -a /etc/hosts
+          echo "${{ env.ALB_IP }} harbor.lab.aws" | sudo tee -a /etc/hosts
+          echo "${{ env.ALB_IP }} argocd.lab.aws" | sudo tee -a /etc/hosts
 
           echo "{\"insecure-registries\": [\"harbor.lab.aws\", \"harbor.lab.aws:80\"]}" | sudo tee /etc/docker/daemon.json
 
