@@ -42,12 +42,12 @@ jobs:
         run: |
           docker run --rm -v ${{ github.workspace }}:/src \
            ghcr.io/aquasecurity/trivy:latest fs /src --severity HIGH,CRITICAL
+
   build-and-push:
     runs-on: ubuntu-latest
     needs: security-scans
     env:
       REGISTRY: ${{ secrets.REGISTRY }}
-      IMAGE_NAME: ${{ secrets.HARBOR_PROJECT }}/simple-app
       ALB_IP: ${{ secrets.ALB_IP }}
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +61,16 @@ jobs:
           echo "{\"insecure-registries\": [\"harbor.lab.aws\", \"harbor.lab.aws:80\"]}" | sudo tee /etc/docker/daemon.json
 
           sudo systemctl restart docker
+      
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}:80/${{ secrets.HARBOR_PROJECT }}/simple-app
+          tags: |
+            type=sha
+            type=raw,value=latest
+
       - name: Login no Harbor
         run: |
           echo "${{ secrets.HARBOR_PASSWORD }}" | sudo docker login ${{ env.REGISTRY }}:80 \
@@ -68,8 +78,7 @@ jobs:
 
       - name: Build Imagem Docker
         run: |
-          docker build -t ${{ env.REGISTRY }}:80/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-                       -t ${{ env.REGISTRY }}:80/${{ env.IMAGE_NAME }}:latest .
+          docker build -t ${{ steps.meta.outputs.tags }} .
 
       - name: Trivy Image Scan (after-build)
         run: |
@@ -79,8 +88,7 @@ jobs:
       
       - name: Push para o Harbor
         run: |
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ steps.meta.outputs.tags }}
 
   update-gitops-manifests:
     runs-on: ubuntu-latest
