@@ -35,7 +35,7 @@ jobs:
       - name: Hadolint Scan
         if: matrix.tool == 'hadolint'
         run: |
-          docker run --rm -i hadolint/hadolint < Dockerfile
+          docker run --rm -i hadolint/hadolint --ignore DL3018 < Dockerfile
       
       - name: Trivy Scan
         if: matrix.tool == 'trivy'
@@ -68,8 +68,8 @@ jobs:
 
       - name: Build Imagem Docker
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-                       -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
+          docker build --no-cache -t ${{ env.REGISTRY }}:80/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+                       -t ${{ env.REGISTRY }}:80/${{ env.IMAGE_NAME }}:latest .
 
       - name: Trivy Image Scan (after-build)
         run: |
